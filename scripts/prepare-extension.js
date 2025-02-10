@@ -1,21 +1,38 @@
 import { readFile, writeFile, copyFile, mkdir } from 'fs/promises';
-import { resolve } from 'path';
+import { existsSync, readdirSync } from 'fs';
+import { resolve, dirname } from 'path';
 
 async function prepareExtension() {
   try {
     // Create extension directory
     await mkdir('extension', { recursive: true });
+    await mkdir('extension/assets', { recursive: true });
     
-    // Copy dist files to extension directory
-    await copyFile('dist/index.html', 'extension/index.html');
-    await copyFile('dist/main.js', 'extension/main.js');
-    await copyFile('dist/background.js', 'extension/background.js');
+    // Copy and rename index.html to popup.html
+    const indexHtml = await readFile('dist/index.html', 'utf-8');
+    const popupHtml = indexHtml
+      .replace(/src="\/assets\//g, 'src="./assets/')
+      .replace(/href="\/assets\//g, 'href="./assets/');
+    await writeFile('extension/popup.html', popupHtml);
+    
+    // Copy assets if they exist
+    if (existsSync('dist/assets')) {
+      const assets = readdirSync('dist/assets');
+      for (const asset of assets) {
+        const srcPath = resolve('dist/assets', asset);
+        const destPath = resolve('extension/assets', asset);
+        await mkdir(dirname(destPath), { recursive: true });
+        await copyFile(srcPath, destPath);
+      }
+    }
+    
+    // Copy background script if it exists
+    if (existsSync('dist/background.js')) {
+      await copyFile('dist/background.js', 'extension/background.js');
+    }
     
     // Copy manifest
     await copyFile('manifest.json', 'extension/manifest.json');
-    
-    // Create zip file for submission
-    // Note: You'll need to zip the extension directory manually for now
     
     console.log('Extension prepared successfully!');
   } catch (error) {

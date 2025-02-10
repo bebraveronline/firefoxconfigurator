@@ -12,7 +12,10 @@ export default defineConfig({
         background: resolve(__dirname, 'src/background.ts'),
       },
       output: {
-        entryFileNames: '[name].js',
+        entryFileNames: (chunkInfo) => {
+          return chunkInfo.name === 'background' ? 'background.js' : '[name]-[hash].js';
+        },
+        assetFileNames: '[name]-[hash][extname]',
       },
     },
   },
