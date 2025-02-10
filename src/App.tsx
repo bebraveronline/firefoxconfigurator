@@ -1,14 +1,18 @@
-import React, { useState } from 'react';
-import { Download, Upload, HelpCircle, FileDown, Shield, RefreshCw, Save } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Download, Upload, HelpCircle, RefreshCw } from 'lucide-react';
 import { CategorySelector } from './components/CategorySelector';
 import { SettingsPanel } from './components/SettingsPanel';
+import { Guide } from './components/Guide';
 import type { Category, Configuration } from './types';
 
 export default function App() {
   const [selectedCategories, setSelectedCategories] = useState<Category['id'][]>([]);
   const [settings, setSettings] = useState<Record<string, any>>({});
-  const [backupStatus, setBackupStatus] = useState<string>('');
+  const [showGuide, setShowGuide] = useState(false);
+  const [applyStatus, setApplyStatus] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isApplying, setIsApplying] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
   const exportConfig = () => {
     const config: Configuration = {
@@ -44,20 +48,51 @@ export default function App() {
     reader.readAsText(file);
   };
 
-  const backupProfile = async () => {
+  const startCountdown = useCallback(() => {
+    setCountdown(5); // Changed from 3 to 5 seconds
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsApplying(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const applySettings = async () => {
     try {
-      setBackupStatus('Backing up...');
+      setIsApplying(true);
       setError('');
+      startCountdown();
       
-      const response = await browser.runtime.sendMessage({ type: 'BACKUP_PROFILE' });
+      const response = await browser.runtime.sendMessage({ 
+        type: 'APPLY_SETTINGS',
+        settings
+      });
+      
       if (response.success) {
-        setBackupStatus('Backup successful!');
+        setApplyStatus(`
+          The user.js file will be downloaded shortly.
+          
+          After downloading:
+          1. Move the file to your Firefox profile directory:
+             • Windows: %APPDATA%\\Mozilla\\Firefox\\Profiles\\[profile-name]
+             • macOS: ~/Library/Application Support/Firefox/Profiles/[profile-name]
+             • Linux: ~/.mozilla/firefox/[profile-name]
+             
+          2. Restart Firefox for the changes to take effect
+          
+          Tip: To find your profile directory, open Firefox and go to about:support
+        `);
       } else {
         throw new Error(response.error);
       }
     } catch (error) {
       setError((error as Error).message);
-      setBackupStatus('');
+      setApplyStatus('');
     }
   };
 
@@ -66,13 +101,20 @@ export default function App() {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Firefox Configurator</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Firefox Configurator</h1>
             <p className="text-gray-600 mt-2">Customize your Firefox settings for enhanced privacy, security, and performance</p>
             <p className="text-sm text-gray-500 mt-1">
               Inspired by the <a href="https://github.com/arkenfox/user.js" className="text-blue-600 hover:text-blue-800 hover:underline" target="_blank" rel="noopener noreferrer">Arkenfox user.js</a> project. This extension is not affiliated with, endorsed by, or supported by the Arkenfox project team.
             </p>
           </div>
           <div className="flex gap-4">
+            <button
+              onClick={() => setShowGuide(!showGuide)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
+            >
+              <HelpCircle className="w-5 h-5" />
+              Guide
+            </button>
             <label className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 cursor-pointer">
               <Upload className="w-5 h-5" />
               Import
@@ -93,33 +135,11 @@ export default function App() {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Getting Started</h2>
-          <div className="prose prose-blue max-w-none">
-            <p className="text-gray-600 mb-4">
-              Follow these steps to customize your Firefox privacy and security settings:
-            </p>
-            <ol className="list-decimal list-inside space-y-3 text-gray-600">
-              <li>
-                <span className="font-medium text-gray-900">Select Categories:</span> Choose from Privacy, Security, and Performance categories below. Each category contains specific settings you can customize.
-              </li>
-              <li>
-                <span className="font-medium text-gray-900">Adjust Settings:</span> For each category, you'll see detailed options with descriptions and recommended values. Hover over the help icon (?) next to each setting for additional information.
-              </li>
-              <li>
-                <span className="font-medium text-gray-900">Backup Current Profile:</span> Before applying changes, use the Guide to backup your current Firefox profile. This ensures you can restore your previous settings if needed.
-              </li>
-              <li>
-                <span className="font-medium text-gray-900">Export Configuration:</span> After customizing your settings, click the Export button to save your configuration. You can import this file later to restore these settings.
-              </li>
-            </ol>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <p className="text-blue-800 text-sm">
-                <strong>Pro Tip:</strong> Start with the Privacy category if you're new to Firefox configuration. The default settings provide a good balance between privacy and usability.
-              </p>
-            </div>
+        {showGuide && (
+          <div className="mb-8">
+            <Guide />
           </div>
-        </div>
+        )}
 
         <CategorySelector
           selected={selectedCategories}
@@ -127,66 +147,40 @@ export default function App() {
         />
 
         {selectedCategories.length > 0 && (
-          <>
-            <div className="mb-8 bg-white p-6 rounded-lg border border-gray-200">
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    <FileDown className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium mb-2">Backup Your Current Profile</h3>
-                    <p className="text-gray-600 mb-3">
-                      It's important to backup your current Firefox profile before making changes.
-                      Click the button below to create a backup of your current profile settings.
-                    </p>
-                    <button
-                      onClick={backupProfile}
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
-                    >
-                      <Save className="w-4 h-4" />
-                      Backup Current Profile
-                    </button>
-                    {backupStatus && (
-                      <p className="mt-2 text-sm text-green-600">{backupStatus}</p>
-                    )}
-                    {error && (
-                      <p className="mt-2 text-sm text-red-600">Error: {error}</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="mt-1">
-                    <Shield className="w-6 h-6 text-blue-500" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium mb-2">Apply Your Configuration</h3>
-                    <p className="text-gray-600">
-                      After selecting your preferred settings below, click the Apply button to
-                      save your settings. You'll need to restart Firefox for some changes to take effect.
-                    </p>
-                    <button
-                      onClick={() => browser.runtime.sendMessage({ 
-                        type: 'APPLY_SETTINGS',
-                        settings
-                      })}
-                      className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Apply Settings
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
+          <div className="space-y-6">
             <SettingsPanel
               selectedCategories={selectedCategories}
               values={settings}
               onChange={(id, value) => setSettings(prev => ({ ...prev, [id]: value }))}
             />
-          </>
+            
+            <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-lg border border-gray-200">
+              {applyStatus && (
+                <div className="text-center p-4 bg-blue-50 text-blue-700 rounded-lg max-w-2xl whitespace-pre-line">
+                  {applyStatus}
+                </div>
+              )}
+              
+              {error && (
+                <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg max-w-2xl">
+                  Error: {error}
+                </div>
+              )}
+
+              <button
+                onClick={applySettings}
+                disabled={isApplying}
+                className={`px-6 py-3 rounded-lg flex items-center gap-2 transition-colors ${
+                  isApplying 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                } text-white`}
+              >
+                <RefreshCw className={`w-5 h-5 ${isApplying ? 'animate-spin' : ''}`} />
+                {isApplying ? `Please wait (${countdown})` : 'Apply Settings'}
+              </button>
+            </div>
+          </div>
         )}
 
         <footer className="mt-16 border-t border-gray-200 pt-8">

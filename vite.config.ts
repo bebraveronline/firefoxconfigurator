@@ -13,12 +13,13 @@ export default defineConfig({
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'background' ? 'background.js' : '[name]-[hash].js';
+          return chunkInfo.name === 'background' ? 'background.js' : 'assets/[name]-[hash].js';
         },
-        assetFileNames: '[name]-[hash][extname]',
+        assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
   },
+  base: './',
   optimizeDeps: {
     exclude: ['lucide-react'],
   },

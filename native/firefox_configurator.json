@@ -1,0 +1,7 @@
+{
+  "name": "firefox_configurator",
+  "description": "Native messaging host for Firefox Configurator",
+  "path": "PLACEHOLDER_PATH/firefox_configurator.py",
+  "type": "stdio",
+  "allowed_extensions": ["firefox_configurator@example.com"]
+}

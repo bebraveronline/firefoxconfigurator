@@ -1,27 +1,7 @@
-import React, { useState } from 'react';
-import { FileDown, Shield, RefreshCw, Save } from 'lucide-react';
+import React from 'react';
+import { FileDown, Shield, RefreshCw } from 'lucide-react';
 
 export function Guide() {
-  const [backupStatus, setBackupStatus] = useState<string>('');
-  const [error, setError] = useState<string>('');
-
-  const backupProfile = async () => {
-    try {
-      setBackupStatus('Backing up...');
-      setError('');
-      
-      const response = await browser.runtime.sendMessage({ type: 'BACKUP_PROFILE' });
-      if (response.success) {
-        setBackupStatus('Backup successful!');
-      } else {
-        throw new Error(response.error);
-      }
-    } catch (error) {
-      setError((error as Error).message);
-      setBackupStatus('');
-    }
-  };
-
   return (
     <div className="bg-white p-6 rounded-lg border border-gray-200">
       <h2 className="text-xl font-semibold mb-4">Implementation Guide</h2>
@@ -31,34 +11,8 @@ export function Guide() {
           <div className="mt-1">
             <FileDown className="w-6 h-6 text-blue-500" />
           </div>
-          <div className="flex-1">
-            <h3 className="font-medium mb-2">1. Backup Your Current Profile</h3>
-            <p className="text-gray-600 mb-3">
-              It's important to backup your current Firefox profile before making changes.
-              Click the button below to create a backup of your current profile settings.
-            </p>
-            <button
-              onClick={backupProfile}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100"
-            >
-              <Save className="w-4 h-4" />
-              Backup Current Profile
-            </button>
-            {backupStatus && (
-              <p className="mt-2 text-sm text-green-600">{backupStatus}</p>
-            )}
-            {error && (
-              <p className="mt-2 text-sm text-red-600">Error: {error}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-start gap-4">
-          <div className="mt-1">
-            <Shield className="w-6 h-6 text-blue-500" />
-          </div>
           <div>
-            <h3 className="font-medium mb-2">2. Configure Settings</h3>
+            <h3 className="font-medium mb-2">1. Configure Settings</h3>
             <p className="text-gray-600">
               Select the categories and adjust the settings according to your preferences.
               Each setting includes a description and recommended values.
@@ -68,24 +22,42 @@ export function Guide() {
 
         <div className="flex items-start gap-4">
           <div className="mt-1">
+            <Shield className="w-6 h-6 text-blue-500" />
+          </div>
+          <div>
+            <h3 className="font-medium mb-2">2. Apply Your Configuration</h3>
+            <p className="text-gray-600">
+              After selecting your preferred settings, click the Apply button. This will:
+            </p>
+            <ol className="list-decimal list-inside mt-2 space-y-2 text-gray-600">
+              <li>Download a file named <code>user.js</code></li>
+              <li>
+                You'll need to move this file to your Firefox profile directory:
+                <ul className="ml-6 mt-1 list-disc">
+                  <li>Windows: <code>%APPDATA%\Mozilla\Firefox\Profiles\[profile-name]</code></li>
+                  <li>macOS: <code>~/Library/Application Support/Firefox/Profiles/[profile-name]</code></li>
+                  <li>Linux: <code>~/.mozilla/firefox/[profile-name]</code></li>
+                </ul>
+              </li>
+              <li>Restart Firefox for the changes to take effect</li>
+            </ol>
+            <div className="mt-3 p-3 bg-blue-50 rounded-lg text-blue-700 text-sm">
+              <strong>Tip:</strong> To find your profile directory, open Firefox and go to <code>about:support</code>. 
+              Look for "Profile Directory" and click "Open Directory".
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-4">
+          <div className="mt-1">
             <RefreshCw className="w-6 h-6 text-blue-500" />
           </div>
           <div>
-            <h3 className="font-medium mb-2">3. Apply Your Configuration</h3>
+            <h3 className="font-medium mb-2">3. Restart Firefox</h3>
             <p className="text-gray-600">
-              After selecting your preferred settings, click the Apply button below to
-              save your settings. You'll need to restart Firefox for some changes to take effect.
+              After placing the user.js file in your profile directory, restart Firefox for the changes to take effect.
+              Your new settings will be applied when Firefox starts up.
             </p>
-            <button
-              onClick={() => browser.runtime.sendMessage({ 
-                type: 'APPLY_SETTINGS',
-                settings: {} // TODO: Add selected settings
-              })}
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Apply Settings
-            </button>
           </div>
         </div>
       </div>

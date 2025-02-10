@@ -10,12 +10,10 @@ async function prepareExtension() {
     
     // Copy and rename index.html to popup.html
     const indexHtml = await readFile('dist/index.html', 'utf-8');
-    const popupHtml = indexHtml
-      .replace(/src="\/assets\//g, 'src="./assets/')
-      .replace(/href="\/assets\//g, 'href="./assets/');
-    await writeFile('extension/popup.html', popupHtml);
+    // No need to replace paths since we're using relative paths now
+    await writeFile('extension/popup.html', indexHtml);
     
-    // Copy assets if they exist
+    // Copy assets
     if (existsSync('dist/assets')) {
       const assets = readdirSync('dist/assets');
       for (const asset of assets) {
