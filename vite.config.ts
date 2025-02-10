@@ -9,18 +9,21 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        background: resolve(__dirname, 'src/background.ts'),
+        background: resolve(__dirname, 'src/background.ts')
       },
       output: {
         entryFileNames: (chunkInfo) => {
-          return chunkInfo.name === 'background' ? 'background.js' : 'assets/[name]-[hash].js';
+          if (chunkInfo.name === 'background') {
+            return 'background.js';
+          }
+          return 'assets/[name]-[hash].js';
         },
-        assetFileNames: 'assets/[name]-[hash][extname]',
-      },
-    },
+        assetFileNames: 'assets/[name]-[hash][extname]'
+      }
+    }
   },
   base: './',
   optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
+    exclude: ['lucide-react']
+  }
 });

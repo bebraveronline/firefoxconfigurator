@@ -13,6 +13,14 @@ interface Browser {
   downloads: {
     download: (options: { url: string; filename: string; saveAs?: boolean }) => Promise<number>;
   };
+  tabs: {
+    create: (options: { url: string }) => Promise<any>;
+  };
+  browserAction: {
+    onClicked: {
+      addListener: (callback: () => void) => void;
+    };
+  };
 }
 
 declare const browser: Browser;

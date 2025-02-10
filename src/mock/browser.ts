@@ -33,6 +33,14 @@ export const mockBrowser = {
       return 1; // Mock download id
     },
   },
+  tabs: {
+    create: async () => ({}),
+  },
+  browserAction: {
+    onClicked: {
+      addListener: () => {},
+    },
+  },
 };
 
 // Add the mock browser to window in development

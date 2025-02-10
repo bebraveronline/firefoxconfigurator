@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { Download, Upload, HelpCircle, RefreshCw } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Download, Upload, HelpCircle, RefreshCw, ArrowRight } from 'lucide-react';
 import { CategorySelector } from './components/CategorySelector';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Guide } from './components/Guide';
 import type { Category, Configuration } from './types';
+import { settings as defaultSettings } from './data/settings';
 
 export default function App() {
   const [selectedCategories, setSelectedCategories] = useState<Category['id'][]>([]);
@@ -13,6 +14,57 @@ export default function App() {
   const [error, setError] = useState<string>('');
   const [isApplying, setIsApplying] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [readyToDownload, setReadyToDownload] = useState(false);
+  const [profileDir, setProfileDir] = useState<string>('');
+  const [hasDownloaded, setHasDownloaded] = useState(false);
+
+  // Initialize default settings when categories change
+  useEffect(() => {
+    const newSettings = { ...settings };
+    let hasNewSettings = false;
+
+    // Add default values for newly selected categories
+    selectedCategories.forEach(categoryId => {
+      const categorySettings = defaultSettings.filter(setting => 
+        setting.category.includes(categoryId)
+      );
+      
+      categorySettings.forEach(setting => {
+        if (!(setting.id in newSettings)) {
+          newSettings[setting.id] = setting.default;
+          hasNewSettings = true;
+        }
+      });
+    });
+
+    // Remove settings for unselected categories
+    Object.keys(settings).forEach(settingId => {
+      const setting = defaultSettings.find(s => s.id === settingId);
+      if (setting && !setting.category.some(cat => selectedCategories.includes(cat))) {
+        delete newSettings[settingId];
+        hasNewSettings = true;
+      }
+    });
+
+    if (hasNewSettings) {
+      setSettings(newSettings);
+    }
+  }, [selectedCategories]);
+
+  useEffect(() => {
+    const getProfileDir = async () => {
+      try {
+        const response = await browser.runtime.sendMessage({ type: 'GET_PROFILE_DIR' });
+        if (response.success && response.data) {
+          setProfileDir(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to get profile directory:', error);
+      }
+    };
+    getProfileDir();
+  }, []);
 
   const exportConfig = () => {
     const config: Configuration = {
@@ -49,12 +101,13 @@ export default function App() {
   };
 
   const startCountdown = useCallback(() => {
-    setCountdown(5); // Changed from 3 to 5 seconds
+    setCountdown(5);
     const timer = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
           clearInterval(timer);
           setIsApplying(false);
+          setReadyToDownload(true);
           return 0;
         }
         return prev - 1;
@@ -62,44 +115,56 @@ export default function App() {
     }, 1000);
   }, []);
 
-  const applySettings = async () => {
+  const startProcess = () => {
+    setIsApplying(true);
+    setError('');
+    startCountdown();
+    
+    // Set instructions with actual profile directory
+    const instructions = `
+      After downloading:
+      1. Move the file to your Firefox profile directory:
+         ${profileDir ? `Your profile directory is:\n         ${profileDir}` : `
+         • Windows: %APPDATA%\\Mozilla\\Firefox\\Profiles\\[profile-name]
+         • macOS: ~/Library/Application Support/Firefox/Profiles/[profile-name]
+         • Linux: ~/.mozilla/firefox/[profile-name]
+         
+         Tip: To find your profile directory, open Firefox and go to about:support`}
+         
+      2. Restart Firefox for the changes to take effect
+    `;
+    setApplyStatus(instructions);
+    setShowInstructions(true);
+  };
+
+  const downloadAndApply = async () => {
     try {
-      setIsApplying(true);
-      setError('');
-      startCountdown();
-      
       const response = await browser.runtime.sendMessage({ 
         type: 'APPLY_SETTINGS',
         settings
       });
       
-      if (response.success) {
-        setApplyStatus(`
-          The user.js file will be downloaded shortly.
-          
-          After downloading:
-          1. Move the file to your Firefox profile directory:
-             • Windows: %APPDATA%\\Mozilla\\Firefox\\Profiles\\[profile-name]
-             • macOS: ~/Library/Application Support/Firefox/Profiles/[profile-name]
-             • Linux: ~/.mozilla/firefox/[profile-name]
-             
-          2. Restart Firefox for the changes to take effect
-          
-          Tip: To find your profile directory, open Firefox and go to about:support
-        `);
-      } else {
-        throw new Error(response.error);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to apply settings');
       }
+
+      // Mark as downloaded and disable the button
+      setHasDownloaded(true);
+      setReadyToDownload(false);
     } catch (error) {
       setError((error as Error).message);
       setApplyStatus('');
+      setShowInstructions(false);
+      setReadyToDownload(false);
     }
   };
 
+  const showNextButton = selectedCategories.length > 0 && !isApplying && !readyToDownload && !hasDownloaded;
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Firefox Configurator</h1>
             <p className="text-gray-600 mt-2">Customize your Firefox settings for enhanced privacy, security, and performance</p>
@@ -107,7 +172,7 @@ export default function App() {
               Inspired by the <a href="https://github.com/arkenfox/user.js" className="text-blue-600 hover:text-blue-800 hover:underline" target="_blank" rel="noopener noreferrer">Arkenfox user.js</a> project. This extension is not affiliated with, endorsed by, or supported by the Arkenfox project team.
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <button
               onClick={() => setShowGuide(!showGuide)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
@@ -155,7 +220,7 @@ export default function App() {
             />
             
             <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-lg border border-gray-200">
-              {applyStatus && (
+              {showInstructions && applyStatus && (
                 <div className="text-center p-4 bg-blue-50 text-blue-700 rounded-lg max-w-2xl whitespace-pre-line">
                   {applyStatus}
                 </div>
@@ -167,18 +232,34 @@ export default function App() {
                 </div>
               )}
 
-              <button
-                onClick={applySettings}
-                disabled={isApplying}
-                className={`px-6 py-3 rounded-lg flex items-center gap-2 transition-colors ${
-                  isApplying 
-                    ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700'
-                } text-white`}
-              >
-                <RefreshCw className={`w-5 h-5 ${isApplying ? 'animate-spin' : ''}`} />
-                {isApplying ? `Please wait (${countdown})` : 'Apply Settings'}
-              </button>
+              {showNextButton && (
+                <button
+                  onClick={startProcess}
+                  className="px-6 py-3 rounded-lg flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Next
+                  <ArrowRight className="w-5 h-5" />
+                </button>
+              )}
+
+              {isApplying && (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gray-400 text-white cursor-not-allowed">
+                    <RefreshCw className="w-5 h-5 animate-spin" />
+                    Please wait ({countdown}s)
+                  </div>
+                </div>
+              )}
+
+              {readyToDownload && (
+                <button
+                  onClick={downloadAndApply}
+                  className="px-6 py-3 rounded-lg flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Download className="w-5 h-5" />
+                  Add user.js and restart
+                </button>
+              )}
             </div>
           </div>
         )}

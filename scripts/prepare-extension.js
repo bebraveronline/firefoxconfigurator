@@ -1,6 +1,24 @@
 import { readFile, writeFile, copyFile, mkdir } from 'fs/promises';
 import { existsSync, readdirSync } from 'fs';
 import { resolve, dirname } from 'path';
+import sharp from 'sharp';
+
+async function generateIcons() {
+  // Create icons directory
+  await mkdir('extension/assets', { recursive: true });
+
+  // Generate 48x48 icon
+  await sharp('src/assets/icon-48.svg')
+    .resize(48, 48)
+    .png()
+    .toFile('extension/assets/icon-48.png');
+
+  // Generate 96x96 icon
+  await sharp('src/assets/icon-96.svg')
+    .resize(96, 96)
+    .png()
+    .toFile('extension/assets/icon-96.png');
+}
 
 async function prepareExtension() {
   try {
@@ -8,29 +26,33 @@ async function prepareExtension() {
     await mkdir('extension', { recursive: true });
     await mkdir('extension/assets', { recursive: true });
     
-    // Copy and rename index.html to popup.html
-    const indexHtml = await readFile('dist/index.html', 'utf-8');
-    // No need to replace paths since we're using relative paths now
-    await writeFile('extension/popup.html', indexHtml);
+    // Generate icons
+    await generateIcons();
+    
+    // Copy manifest.json
+    await copyFile('manifest.json', 'extension/manifest.json');
+    
+    // Copy and process HTML files
+    const htmlContent = await readFile('dist/index.html', 'utf-8');
+    await writeFile('extension/popup.html', htmlContent);
+    
+    // Copy success and error pages
+    await copyFile('src/success.html', 'extension/success.html');
+    await copyFile('src/error.html', 'extension/error.html');
+    
+    // Copy background script
+    await copyFile('dist/background.js', 'extension/background.js');
     
     // Copy assets
     if (existsSync('dist/assets')) {
       const assets = readdirSync('dist/assets');
       for (const asset of assets) {
-        const srcPath = resolve('dist/assets', asset);
-        const destPath = resolve('extension/assets', asset);
-        await mkdir(dirname(destPath), { recursive: true });
-        await copyFile(srcPath, destPath);
+        await copyFile(
+          resolve('dist/assets', asset),
+          resolve('extension/assets', asset)
+        );
       }
     }
-    
-    // Copy background script if it exists
-    if (existsSync('dist/background.js')) {
-      await copyFile('dist/background.js', 'extension/background.js');
-    }
-    
-    // Copy manifest
-    await copyFile('manifest.json', 'extension/manifest.json');
     
     console.log('Extension prepared successfully!');
   } catch (error) {

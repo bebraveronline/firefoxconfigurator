@@ -11,11 +11,23 @@
   ],
   "browser_action": {
     "default_title": "Firefox Privacy Config",
-    "default_popup": "popup.html"
+    "default_icon": {
+      "48": "assets/icon-48.png",
+      "96": "assets/icon-96.png"
+    }
   },
   "background": {
     "scripts": ["background.js"],
     "persistent": false
   },
-  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'; style-src 'self' 'unsafe-inline';"
+  "icons": {
+    "48": "assets/icon-48.png",
+    "96": "assets/icon-96.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "firefox-configurator@example.com",
+      "strict_min_version": "57.0"
+    }
+  }
 }
