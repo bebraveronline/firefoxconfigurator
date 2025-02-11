@@ -9,12 +9,20 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
-        background: resolve(__dirname, 'src/background.ts')
+        background: resolve(__dirname, 'src/background.ts'),
+        success: resolve(__dirname, 'src/assets/success.js'),
+        error: resolve(__dirname, 'src/assets/error.js')
       },
       output: {
         entryFileNames: (chunkInfo) => {
           if (chunkInfo.name === 'background') {
             return 'background.js';
+          }
+          if (chunkInfo.name === 'success') {
+            return 'assets/success.js';
+          }
+          if (chunkInfo.name === 'error') {
+            return 'assets/error.js';
           }
           return 'assets/[name]-[hash].js';
         },

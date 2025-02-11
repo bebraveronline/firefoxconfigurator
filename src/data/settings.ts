@@ -72,6 +72,15 @@ export const settings: Setting[] = [
     default: true,
     type: 'boolean',
   },
+  {
+    id: 'extensions.pocket.enabled',
+    category: ['privacy'],
+    title: 'Disable Pocket',
+    description: 'Disables the built-in Pocket integration',
+    default: false,
+    type: 'boolean',
+    helpText: 'Removes Pocket integration to reduce unnecessary features and potential data collection',
+  },
   
   // Security Settings
   {

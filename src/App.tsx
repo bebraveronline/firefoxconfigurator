@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Download, Upload, HelpCircle, RefreshCw, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Upload, HelpCircle, Moon, Sun } from 'lucide-react';
 import { CategorySelector } from './components/CategorySelector';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Guide } from './components/Guide';
@@ -10,21 +10,29 @@ export default function App() {
   const [selectedCategories, setSelectedCategories] = useState<Category['id'][]>([]);
   const [settings, setSettings] = useState<Record<string, any>>({});
   const [showGuide, setShowGuide] = useState(false);
-  const [applyStatus, setApplyStatus] = useState<string>('');
-  const [error, setError] = useState<string>('');
-  const [isApplying, setIsApplying] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [readyToDownload, setReadyToDownload] = useState(false);
-  const [profileDir, setProfileDir] = useState<string>('');
-  const [hasDownloaded, setHasDownloaded] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean | null>(null);
 
-  // Initialize default settings when categories change
+  // Initialize dark mode based on system preference
   useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setDarkMode(mediaQuery.matches);
+
+    const handler = (e: MediaQueryListEvent) => setDarkMode(e.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
+
+  // Apply dark mode class to html element
+  useEffect(() => {
+    if (darkMode === null) return;
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode]);
+
+  // Rest of your existing useEffect for settings...
+  React.useEffect(() => {
     const newSettings = { ...settings };
     let hasNewSettings = false;
 
-    // Add default values for newly selected categories
     selectedCategories.forEach(categoryId => {
       const categorySettings = defaultSettings.filter(setting => 
         setting.category.includes(categoryId)
@@ -38,7 +46,6 @@ export default function App() {
       });
     });
 
-    // Remove settings for unselected categories
     Object.keys(settings).forEach(settingId => {
       const setting = defaultSettings.find(s => s.id === settingId);
       if (setting && !setting.category.some(cat => selectedCategories.includes(cat))) {
@@ -52,34 +59,31 @@ export default function App() {
     }
   }, [selectedCategories]);
 
-  useEffect(() => {
-    const getProfileDir = async () => {
-      try {
-        const response = await browser.runtime.sendMessage({ type: 'GET_PROFILE_DIR' });
-        if (response.success && response.data) {
-          setProfileDir(response.data);
-        }
-      } catch (error) {
-        console.error('Failed to get profile directory:', error);
-      }
-    };
-    getProfileDir();
-  }, []);
-
   const exportConfig = () => {
-    const config: Configuration = {
-      categories: selectedCategories,
-      settings,
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-    };
+    const userJsContent = [
+      '/*',
+      ' * Firefox Configurator - Custom Browser Configuration',
+      ' * Generated on: ' + new Date().toISOString(),
+      ' */',
+      '',
+      ...Object.entries(settings).map(([key, value]) => {
+        const setting = defaultSettings.find(s => s.id === key);
+        const formattedValue = typeof value === 'string' 
+          ? `"${value.replace(/["\\]/g, '\\$&')}"` 
+          : value;
+        return `user_pref("${key}", ${formattedValue}); // ${setting?.title}`;
+      })
+    ].join('\n');
 
-    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const blob = new Blob([userJsContent], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'firefox-config.json';
+    a.download = 'user.js';
+    a.setAttribute('aria-label', 'Download configuration file');
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
@@ -95,192 +99,141 @@ export default function App() {
         setSettings(config.settings);
       } catch (error) {
         console.error('Failed to parse configuration file:', error);
+        const alert = document.createElement('div');
+        alert.setAttribute('role', 'alert');
+        alert.textContent = 'Error importing configuration file. Please check the file format.';
+        document.body.appendChild(alert);
+        setTimeout(() => document.body.removeChild(alert), 5000);
       }
     };
     reader.readAsText(file);
   };
 
-  const startCountdown = useCallback(() => {
-    setCountdown(5);
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsApplying(false);
-          setReadyToDownload(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
-
-  const startProcess = () => {
-    setIsApplying(true);
-    setError('');
-    startCountdown();
-    
-    // Set instructions with actual profile directory
-    const instructions = `
-      After downloading:
-      1. Move the file to your Firefox profile directory:
-         ${profileDir ? `Your profile directory is:\n         ${profileDir}` : `
-         • Windows: %APPDATA%\\Mozilla\\Firefox\\Profiles\\[profile-name]
-         • macOS: ~/Library/Application Support/Firefox/Profiles/[profile-name]
-         • Linux: ~/.mozilla/firefox/[profile-name]
-         
-         Tip: To find your profile directory, open Firefox and go to about:support`}
-         
-      2. Restart Firefox for the changes to take effect
-    `;
-    setApplyStatus(instructions);
-    setShowInstructions(true);
-  };
-
-  const downloadAndApply = async () => {
-    try {
-      const response = await browser.runtime.sendMessage({ 
-        type: 'APPLY_SETTINGS',
-        settings
-      });
-      
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to apply settings');
-      }
-
-      // Mark as downloaded and disable the button
-      setHasDownloaded(true);
-      setReadyToDownload(false);
-    } catch (error) {
-      setError((error as Error).message);
-      setApplyStatus('');
-      setShowInstructions(false);
-      setReadyToDownload(false);
-    }
-  };
-
-  const showNextButton = selectedCategories.length > 0 && !isApplying && !readyToDownload && !hasDownloaded;
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Firefox Configurator</h1>
-            <p className="text-gray-600 mt-2">Customize your Firefox settings for enhanced privacy, security, and performance</p>
-            <p className="text-sm text-gray-500 mt-1">
-              Inspired by the <a href="https://github.com/arkenfox/user.js" className="text-blue-600 hover:text-blue-800 hover:underline" target="_blank" rel="noopener noreferrer">Arkenfox user.js</a> project. This extension is not affiliated with, endorsed by, or supported by the Arkenfox project team.
-            </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors" role="main">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-white dark:bg-gray-800 p-4 z-50"
+      >
+        Skip to main content
+      </a>
+
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl" id="main-content">
+        <header role="banner">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Firefox Configurator</h1>
+              <p className="text-gray-600 dark:text-gray-300 mt-2">
+                Generate a user.js file to customize your browser settings for enhanced privacy, security, and performance
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Inspired by the{' '}
+                <a 
+                  href="https://github.com/arkenfox/user.js" 
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Visit Arkenfox user.js project (opens in new tab)"
+                >
+                  Arkenfox user.js
+                </a>
+                {' '}project, which provides a comprehensive template for configuring Firefox privacy settings
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-4" role="toolbar" aria-label="Main actions">
+              <button
+                onClick={() => setDarkMode(!darkMode)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 dark:text-gray-200"
+                aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {darkMode ? (
+                  <Sun className="w-5 h-5" aria-hidden="true" />
+                ) : (
+                  <Moon className="w-5 h-5" aria-hidden="true" />
+                )}
+              </button>
+              <button
+                onClick={() => setShowGuide(!showGuide)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 dark:text-gray-200"
+                aria-expanded={showGuide}
+              >
+                <HelpCircle className="w-5 h-5" aria-hidden="true" />
+                <span>Guide</span>
+              </button>
+              <label 
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 dark:focus:ring-offset-gray-900 dark:text-gray-200"
+                role="button"
+                tabIndex={0}
+              >
+                <Upload className="w-5 h-5" aria-hidden="true" />
+                <span>Import</span>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={importConfig}
+                  className="hidden"
+                  aria-label="Import configuration file"
+                />
+              </label>
+              <button
+                onClick={exportConfig}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                aria-label="Download configuration as user.js file"
+              >
+                <Download className="w-5 h-5" aria-hidden="true" />
+                <span>Download user.js</span>
+              </button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-4">
-            <button
-              onClick={() => setShowGuide(!showGuide)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50"
-            >
-              <HelpCircle className="w-5 h-5" />
-              Guide
-            </button>
-            <label className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 cursor-pointer">
-              <Upload className="w-5 h-5" />
-              Import
-              <input
-                type="file"
-                accept=".json"
-                onChange={importConfig}
-                className="hidden"
-              />
-            </label>
-            <button
-              onClick={exportConfig}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <Download className="w-5 h-5" />
-              Export
-            </button>
-          </div>
-        </div>
+        </header>
 
         {showGuide && (
-          <div className="mb-8">
+          <div className="mb-8" role="complementary" aria-label="Usage guide">
             <Guide />
           </div>
         )}
 
-        <CategorySelector
-          selected={selectedCategories}
-          onChange={setSelectedCategories}
-        />
+        <main>
+          <CategorySelector
+            selected={selectedCategories}
+            onChange={setSelectedCategories}
+          />
 
-        {selectedCategories.length > 0 && (
-          <div className="space-y-6">
-            <SettingsPanel
-              selectedCategories={selectedCategories}
-              values={settings}
-              onChange={(id, value) => setSettings(prev => ({ ...prev, [id]: value }))}
-            />
-            
-            <div className="flex flex-col items-center gap-4 p-6 bg-white rounded-lg border border-gray-200">
-              {showInstructions && applyStatus && (
-                <div className="text-center p-4 bg-blue-50 text-blue-700 rounded-lg max-w-2xl whitespace-pre-line">
-                  {applyStatus}
-                </div>
-              )}
-              
-              {error && (
-                <div className="text-center p-4 bg-red-50 text-red-700 rounded-lg max-w-2xl">
-                  Error: {error}
-                </div>
-              )}
-
-              {showNextButton && (
-                <button
-                  onClick={startProcess}
-                  className="px-6 py-3 rounded-lg flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Next
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-              )}
-
-              {isApplying && (
-                <div className="flex flex-col items-center gap-2">
-                  <div className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gray-400 text-white cursor-not-allowed">
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    Please wait ({countdown}s)
-                  </div>
-                </div>
-              )}
-
-              {readyToDownload && (
-                <button
-                  onClick={downloadAndApply}
-                  className="px-6 py-3 rounded-lg flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
-                >
-                  <Download className="w-5 h-5" />
-                  Add user.js and restart
-                </button>
-              )}
+          {selectedCategories.length > 0 && (
+            <div className="space-y-6">
+              <SettingsPanel
+                selectedCategories={selectedCategories}
+                values={settings}
+                onChange={(id, value) => setSettings(prev => ({ ...prev, [id]: value }))}
+              />
             </div>
-          </div>
-        )}
+          )}
+        </main>
 
-        <footer className="mt-16 border-t border-gray-200 pt-8">
-          <div className="text-center text-sm text-gray-500">
-            <p className="mb-2">
+        <footer className="mt-16 border-t border-gray-200 dark:border-gray-700 pt-8" role="contentinfo">
+          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
+            <p className="mb-4">
               <a 
-                href="https://github.com/bebraveronline/firefoxconfigurator" 
-                className="text-blue-600 hover:text-blue-800 hover:underline"
+                href="https://github.com/bebraveronline/firefox-configurator" 
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="View source code on GitHub (opens in new tab)"
               >
                 View source code on GitHub
               </a>
             </p>
-            <p className="max-w-2xl mx-auto">
-              This software is provided "as is", without warranty of any kind, express or implied. 
-              The authors and maintainers take no responsibility for any potential issues or damages 
-              that may arise from using this extension. Use at your own risk.
-            </p>
+            <div className="max-w-2xl mx-auto space-y-4">
+              <p>
+                Firefox Configurator is not affiliated with, endorsed by, or supported by Mozilla. 
+                Firefox® is a trademark of the Mozilla Foundation in the U.S. and other countries.
+              </p>
+              <p>
+                This software is provided "as is", without warranty of any kind, express or implied. 
+                The authors and maintainers take no responsibility for any potential issues or damages 
+                that may arise from using this tool. Use at your own risk.
+              </p>
+            </div>
           </div>
         </footer>
       </div>

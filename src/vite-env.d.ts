@@ -23,4 +23,12 @@ interface Browser {
   };
 }
 
-declare const browser: Browser;
+declare global {
+  interface Window {
+    browser: Browser;
+  }
+  const browser: Browser;
+  const chrome: any;
+}
+
+export {};

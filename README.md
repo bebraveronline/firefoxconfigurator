@@ -1,14 +1,14 @@
-# Firefox Configurator
+# user.js Generator for Firefox
 
 A Firefox extension to customize privacy, security, and performance settings with ease. This extension provides a user-friendly interface to configure Firefox settings, inspired by the [Arkenfox user.js](https://github.com/arkenfox/user.js) project.
 
-**Note:** This extension is not affiliated with, endorsed by, or supported by the Arkenfox project team.
+**Note:** This extension is not affiliated with, endorsed by, or supported by Mozilla or the Arkenfox project team. Firefox® is a trademark of the Mozilla Foundation in the U.S. and other countries.
 
 ## Features
 
 - 🛡️ Configure privacy settings to enhance your browsing privacy
 - 🔒 Strengthen browser security against potential threats
-- ⚡ Optimize Firefox performance
+- ⚡ Optimize browser performance
 - 💾 Backup and restore configurations
 - 🎯 User-friendly interface with detailed explanations
 - 📚 Based on well-researched security practices
@@ -18,7 +18,7 @@ A Firefox extension to customize privacy, security, and performance settings wit
 ## Installation
 
 ### From Firefox Add-ons
-1. Visit the [Firefox Add-ons page](https://addons.mozilla.org/firefox/addon/firefox-configurator/)
+1. Visit the Firefox Add-ons page
 2. Click "Add to Firefox"
 3. Follow the installation prompts
 
@@ -33,12 +33,13 @@ A Firefox extension to customize privacy, security, and performance settings wit
 ### Prerequisites
 - Node.js 18 or later
 - npm 9 or later
+- Firefox browser
 
 ### Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/bebraveronline/firefoxconfigurator.git
-   cd firefoxconfigurator
+   git clone https://github.com/bebraveronline/userjs-generator.git
+   cd userjs-generator
    ```
 
 2. Install dependencies:
@@ -108,8 +109,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - [Arkenfox user.js](https://github.com/arkenfox/user.js) project for research and documentation
-- Mozilla Firefox team for browser APIs
 - Contributors and users who provide feedback and suggestions
+
+## Trademark Notice
+
+Firefox® is a registered trademark of the Mozilla Foundation. This project is not affiliated with, endorsed by, or sponsored by Mozilla.
 
 ## Disclaimer
 

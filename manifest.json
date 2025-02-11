@@ -1,20 +1,16 @@
 {
   "manifest_version": 2,
-  "name": "Firefox Privacy Configuration",
+  "name": "user.js Generator",
   "version": "1.0.0",
-  "description": "Configure Firefox privacy, security, and performance settings with ease",
+  "description": "Generate and manage browser privacy, security, and performance settings with ease",
   "permissions": [
     "storage",
     "downloads",
-    "nativeMessaging",
-    "<all_urls>"
+    "nativeMessaging"
   ],
   "browser_action": {
-    "default_title": "Firefox Privacy Config",
-    "default_icon": {
-      "48": "assets/icon-48.png",
-      "96": "assets/icon-96.png"
-    }
+    "default_title": "user.js Generator",
+    "default_popup": "popup.html"
   },
   "background": {
     "scripts": ["background.js"],
@@ -26,8 +22,9 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "firefox-configurator@example.com",
-      "strict_min_version": "57.0"
+      "id": "userjs-generator@example.com",
+      "strict_min_version": "79.0"
     }
-  }
+  },
+  "content_security_policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'"
 }
