@@ -104,12 +104,9 @@ This extension:
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-## Acknowledgments
-
-- [Arkenfox user.js](https://github.com/arkenfox/user.js) project for research and documentation
-- Contributors and users who provide feedback and suggestions
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://www.gnu.org/licenses/gpl-3.0.en.html) for more details.
 
 ## Trademark Notice
 

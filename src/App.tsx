@@ -233,6 +233,17 @@ export default function App() {
                 The authors and maintainers take no responsibility for any potential issues or damages 
                 that may arise from using this tool. Use at your own risk.
               </p>
+              <p>
+                This program is free software: you can redistribute it and/or modify it under the terms of the{' '}
+                <a 
+                  href="https://www.gnu.org/licenses/gpl-3.0.en.html"
+                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GNU General Public License v3
+                </a>.
+              </p>
             </div>
           </div>
         </footer>
