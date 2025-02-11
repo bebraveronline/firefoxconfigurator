@@ -38,8 +38,8 @@ A Firefox extension to customize privacy, security, and performance settings wit
 ### Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/bebraveronline/userjs-generator.git
-   cd userjs-generator
+   git clone https://github.com/bebraveronline/firefoxconfigurator.git
+   cd firefoxconfigurator
    ```
 
 2. Install dependencies:

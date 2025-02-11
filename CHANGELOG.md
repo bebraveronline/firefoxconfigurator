@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated GitHub repository URL to https://github.com/bebraveronline/firefoxconfigurator
+
 ## [1.0.0] - 2024-03-24
 
 ### Initial Release
@@ -118,5 +121,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved performance
 - Added caching strategies
 
-[Unreleased]: https://github.com/bebraveronline/firefox-configurator/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/bebraveronline/firefox-configurator/releases/tag/v1.0.0
+[Unreleased]: https://github.com/bebraveronline/firefoxconfigurator/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/bebraveronline/firefoxconfigurator/releases/tag/v1.0.0

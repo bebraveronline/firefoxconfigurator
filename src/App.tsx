@@ -12,20 +12,31 @@ export default function App() {
   const [showGuide, setShowGuide] = useState(false);
   const [darkMode, setDarkMode] = useState<boolean | null>(null);
 
-  // Initialize dark mode based on system preference
+  // Initialize dark mode based on localStorage or system preference
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    setDarkMode(mediaQuery.matches);
+    const savedMode = localStorage.getItem('darkMode');
+    if (savedMode !== null) {
+      setDarkMode(savedMode === 'true');
+    } else {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      setDarkMode(mediaQuery.matches);
 
-    const handler = (e: MediaQueryListEvent) => setDarkMode(e.matches);
-    mediaQuery.addEventListener('change', handler);
-    return () => mediaQuery.removeEventListener('change', handler);
+      const handler = (e: MediaQueryListEvent) => {
+        // Only update if user hasn't set a preference
+        if (localStorage.getItem('darkMode') === null) {
+          setDarkMode(e.matches);
+        }
+      };
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    }
   }, []);
 
-  // Apply dark mode class to html element
+  // Apply dark mode class to html element and save preference
   useEffect(() => {
     if (darkMode === null) return;
     document.documentElement.classList.toggle('dark', darkMode);
+    localStorage.setItem('darkMode', darkMode.toString());
   }, [darkMode]);
 
   // Rest of your existing useEffect for settings...
@@ -214,7 +225,7 @@ export default function App() {
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             <p className="mb-4">
               <a 
-                href="https://github.com/bebraveronline/firefox-configurator" 
+                href="https://github.com/bebraveronline/firefoxconfigurator" 
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
                 target="_blank"
                 rel="noopener noreferrer"
