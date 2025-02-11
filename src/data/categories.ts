@@ -19,4 +19,10 @@ export const categories: Category[] = [
     description: 'Optimize Firefox for better speed and resource usage',
     icon: 'zap',
   },
+  {
+    id: 'misc',
+    title: 'Miscellaneous',
+    description: 'Additional browser customization options and features',
+    icon: 'settings',
+  },
 ];

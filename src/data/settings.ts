@@ -72,15 +72,6 @@ export const settings: Setting[] = [
     default: true,
     type: 'boolean',
   },
-  {
-    id: 'extensions.pocket.enabled',
-    category: ['privacy'],
-    title: 'Disable Pocket',
-    description: 'Disables the built-in Pocket integration',
-    default: false,
-    type: 'boolean',
-    helpText: 'Removes Pocket integration to reduce unnecessary features and potential data collection',
-  },
   
   // Security Settings
   {
@@ -250,5 +241,31 @@ export const settings: Setting[] = [
     step: 16384,
     unit: 'bytes',
     helpText: 'Higher values may improve image loading but use more memory',
-  }
+  },
+
+  // Miscellaneous Settings
+  {
+    id: 'extensions.pocket.enabled',
+    category: ['misc'],
+    title: 'Disable Pocket',
+    description: 'Disables the built-in Pocket integration',
+    default: false,
+    type: 'boolean',
+    helpText: 'Removes Pocket integration to reduce unnecessary features and potential data collection',
+  },
+  {
+    id: 'browser.theme.content-theme',
+    category: ['misc'],
+    title: 'Content Theme',
+    description: 'Sets the theme for website content',
+    default: 2,
+    type: 'select',
+    options: [
+      { value: 0, label: 'System Theme' },
+      { value: 1, label: 'Light Theme' },
+      { value: 2, label: 'Dark Theme' },
+      { value: 3, label: 'High Contrast' },
+    ],
+    helpText: 'Choose how website content should be themed',
+  },
 ];

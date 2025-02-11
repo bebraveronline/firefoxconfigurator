@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Lock, Zap } from 'lucide-react';
+import { Shield, Lock, Zap, Settings } from 'lucide-react';
 import { categories } from '../data/categories';
 import type { Category } from '../types';
 
@@ -22,13 +22,14 @@ export function CategorySelector({ selected, onChange }: CategorySelectorProps) 
       case 'shield': return <Shield className="w-6 h-6" aria-hidden="true" />;
       case 'lock': return <Lock className="w-6 h-6" aria-hidden="true" />;
       case 'zap': return <Zap className="w-6 h-6" aria-hidden="true" />;
+      case 'settings': return <Settings className="w-6 h-6" aria-hidden="true" />;
       default: return null;
     }
   };
 
   return (
     <div 
-      className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
       role="group"
       aria-label="Setting categories"
     >

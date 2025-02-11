@@ -30,6 +30,74 @@ export function SettingsPanel({ selectedCategories, values, onChange }: Settings
     return unit ? `${value} ${unit}` : value;
   };
 
+  const renderControl = (setting: Setting) => {
+    if (setting.type === 'boolean') {
+      return (
+        <div className="relative inline-flex items-center">
+          <input
+            type="checkbox"
+            id={setting.id}
+            className="sr-only peer"
+            checked={values[setting.id] ?? setting.default}
+            onChange={e => onChange(setting.id, e.target.checked)}
+            aria-labelledby={`label-${setting.id}`}
+          />
+          <label
+            htmlFor={setting.id}
+            className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 cursor-pointer"
+          >
+            <span className="sr-only">Toggle {setting.title}</span>
+          </label>
+        </div>
+      );
+    }
+
+    if (setting.type === 'select' && setting.options) {
+      return (
+        <select
+          id={setting.id}
+          value={values[setting.id] ?? setting.default}
+          onChange={e => onChange(setting.id, Number(e.target.value))}
+          className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-blue-400 sm:text-sm"
+          aria-labelledby={`label-${setting.id}`}
+        >
+          {setting.options.map(option => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <div className="flex flex-col items-end gap-1 w-full max-w-xs">
+        <input
+          type="range"
+          id={setting.id}
+          min={setting.min}
+          max={setting.max}
+          step={setting.step}
+          value={values[setting.id] ?? setting.default}
+          onChange={e => onChange(setting.id, Number(e.target.value))}
+          className="w-full accent-blue-600 dark:accent-blue-500"
+          aria-labelledby={`label-${setting.id}`}
+          aria-valuemin={setting.min}
+          aria-valuemax={setting.max}
+          aria-valuenow={values[setting.id] ?? setting.default}
+          aria-valuetext={`${values[setting.id] ?? setting.default}${setting.unit ? ` ${setting.unit}` : ''}`}
+        />
+        <div className="flex justify-between w-full text-sm text-gray-600 dark:text-gray-400">
+          <span>{formatValue(setting.min!, setting.unit)}</span>
+          <span className="font-medium">
+            {formatValue(values[setting.id] ?? setting.default, setting.unit)}
+          </span>
+          <span>{formatValue(setting.max!, setting.unit)}</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6" role="region" aria-label="Settings configuration">
       {categorySettings.map(({ category, settings: categorySettings }) => (
@@ -49,7 +117,6 @@ export function SettingsPanel({ selectedCategories, values, onChange }: Settings
               <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" aria-hidden="true" />
             )}
           </button>
-          
           {expandedCategories.includes(category) && (
             <div 
               id={`settings-${category}`}
@@ -85,49 +152,7 @@ export function SettingsPanel({ selectedCategories, values, onChange }: Settings
                       <code className="text-xs text-gray-500 dark:text-gray-400 mt-1">{setting.id}</code>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      {setting.type === 'boolean' ? (
-                        <div className="relative inline-flex items-center">
-                          <input
-                            type="checkbox"
-                            id={setting.id}
-                            className="sr-only peer"
-                            checked={values[setting.id] ?? setting.default}
-                            onChange={e => onChange(setting.id, e.target.checked)}
-                            aria-labelledby={`label-${setting.id}`}
-                          />
-                          <label
-                            htmlFor={setting.id}
-                            className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 dark:after:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 cursor-pointer"
-                          >
-                            <span className="sr-only">Toggle {setting.title}</span>
-                          </label>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-end gap-1 w-full max-w-xs">
-                          <input
-                            type="range"
-                            id={setting.id}
-                            min={setting.min}
-                            max={setting.max}
-                            step={setting.step}
-                            value={values[setting.id] ?? setting.default}
-                            onChange={e => onChange(setting.id, Number(e.target.value))}
-                            className="w-full accent-blue-600 dark:accent-blue-500"
-                            aria-labelledby={`label-${setting.id}`}
-                            aria-valuemin={setting.min}
-                            aria-valuemax={setting.max}
-                            aria-valuenow={values[setting.id] ?? setting.default}
-                            aria-valuetext={`${values[setting.id] ?? setting.default}${setting.unit ? ` ${setting.unit}` : ''}`}
-                          />
-                          <div className="flex justify-between w-full text-sm text-gray-600 dark:text-gray-400">
-                            <span>{formatValue(setting.min!, setting.unit)}</span>
-                            <span className="font-medium">
-                              {formatValue(values[setting.id] ?? setting.default, setting.unit)}
-                            </span>
-                            <span>{formatValue(setting.max!, setting.unit)}</span>
-                          </div>
-                        </div>
-                      )}
+                      {renderControl(setting)}
                     </div>
                   </div>
                 </div>
